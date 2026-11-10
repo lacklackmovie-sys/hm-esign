@@ -21,7 +21,8 @@ export interface Template {
 }
 
 export type DbStatus = 'sent' | 'viewed' | 'signed'
-export type ShownStatus = DbStatus | 'expired'
+export type ShownStatus = DbStatus | 'expired' | 'collecting' | 'closed'
+export type Mode = 'single' | 'multi'
 
 export interface Contract {
   id: string
@@ -35,6 +36,10 @@ export interface Contract {
   fields: Field[]
   original_path: string
   page_count: number
+  mode: Mode
+  max_signers: number | null
+  closed: boolean
+  signed_count?: number
   expires_at: string | null
   created_at: string
   viewed_at: string | null
@@ -42,6 +47,20 @@ export interface Contract {
   signed_path: string | null
   signed_sha256: string | null
   signer_name: string | null
+  signer_ip: string | null
+  signer_user_agent: string | null
+}
+
+export interface Signing {
+  id: string
+  contract_id: string
+  signer_name: string
+  signer_phone: string
+  state: 'pending' | 'done'
+  created_at: string
+  signed_at: string | null
+  signed_path: string | null
+  signed_sha256: string | null
   signer_ip: string | null
   signer_user_agent: string | null
 }

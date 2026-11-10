@@ -17,6 +17,9 @@ export interface StampInput {
   recipientName: string
   ip: string | null
   userAgent: string
+  /** 다중 모드: 제출 번호와 입력한 연락처 */
+  signingId?: string
+  signerPhone?: string
   renderText: TextRenderer
 }
 
@@ -132,8 +135,10 @@ export async function stampSignedPdf(input: StampInput): Promise<StampResult> {
   const rows: [string, string][] = [
     ['계약서 ID', input.contractId],
     ['계약명', input.title],
+    ...(input.signingId ? ([['제출 ID', input.signingId]] as [string, string][]) : []),
     ['서명 요청 대상', input.recipientName],
     ['서명자(입력한 이름)', input.signerName],
+    ...(input.signerPhone ? ([['연락처(입력)', input.signerPhone]] as [string, string][]) : []),
     ['서명 일시', fmtKSTFull(input.signedAt)],
     ['접속 IP', input.ip ?? '확인되지 않음'],
     ['접속 환경(UA)', input.userAgent || '확인되지 않음'],

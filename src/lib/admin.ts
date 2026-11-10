@@ -3,7 +3,8 @@ import { BUCKET } from './config'
 import { supabase } from './supabase'
 import { imagesToPdf } from './images'
 import { destroyPdf, openPdf } from './pdf'
-import type { Contract, Field, Template } from './types'
+import { zipSync } from 'fflate'
+import type { Contract, Field, Mode, Signing, Template } from './types'
 import { uid } from './util'
 
 export const MAX_UPLOAD = 20 * 1024 * 1024
@@ -21,16 +22,22 @@ export async function listTemplates(): Promise<Template[]> {
   return data as Template[]
 }
 
+type WithCount = Contract & { esign_signings?: { count: number }[] }
+const withCount = (c: WithCount): Contract => {
+  const { esign_signings, ...rest } = c
+  return { ...rest, signed_count: esign_signings?.[0]?.count ?? 0 }
+}
+
 export async function listContracts(): Promise<Contract[]> {
-  const { data, error } = await supabase.from('esign_contracts').select('*').order('created_at', { ascending: false })
+  const { data, error } = await supabase.from('esign_contracts').select('*, esign_signings(count)').eq('esign_signings.state', 'done').order('created_at', { ascending: false })
   if (error) throw error
-  return data as Contract[]
+  return (data as WithCount[]).map(withCount)
 }
 
 export async function getContract(id: string): Promise<Contract | null> {
-  const { data, error } = await supabase.from('esign_contracts').select('*').eq('id', id).maybeSingle()
+  const { data, error } = await supabase.from('esign_contracts').select('*, esign_signings(count)').eq('esign_signings.state', 'done').eq('id', id).maybeSingle()
   if (error) throw error
-  return data as Contract | null
+  return data ? withCount(data as WithCount) : null
 }
 
 export async function signedUrl(path: string, download?: string, expires = 600): Promise<string> {
@@ -107,6 +114,8 @@ export interface NewContract {
   memo: string
   fields: Field[]
   expiresInDays: number | null
+  mode?: Mode
+  maxSigners?: number | null
 }
 
 export async function createContract(n: NewContract): Promise<Contract> {
@@ -127,6 +136,8 @@ export async function createContract(n: NewContract): Promise<Contract> {
     original_path: path,
     page_count: n.template.page_count,
     expires_at,
+    mode: n.mode ?? 'single',
+    max_signers: n.mode === 'multi' ? n.maxSigners ?? null : null,
   }).select('*').single()
   if (error || !data) {
     await supabase.storage.from(BUCKET).remove([path])
@@ -136,10 +147,58 @@ export async function createContract(n: NewContract): Promise<Contract> {
 }
 
 export async function deleteContract(c: Contract) {
-  const files = [c.original_path, ...(c.signed_path ? [c.signed_path] : [])]
+  const sg = await listSignings(c.id)
+  const files = [c.original_path, ...(c.signed_path ? [c.signed_path] : []), ...sg.map((x) => x.signed_path).filter((x): x is string => !!x)]
   const { error } = await supabase.from('esign_contracts').delete().eq('id', c.id)
   if (error) throw error
   await supabase.storage.from(BUCKET).remove(files)
+}
+
+export async function listSignings(contractId: string): Promise<Signing[]> {
+  const { data, error } = await supabase.from('esign_signings').select('*').eq('contract_id', contractId).eq('state', 'done').order('signed_at', { ascending: false })
+  if (error) throw error
+  return data as Signing[]
+}
+
+export async function deleteSigning(s: Signing) {
+  const { error } = await supabase.from('esign_signings').delete().eq('id', s.id)
+  if (error) throw error
+  if (s.signed_path) await supabase.storage.from(BUCKET).remove([s.signed_path])
+}
+
+export async function setClosed(id: string, closed: boolean) {
+  const { error } = await supabase.from('esign_contracts').update({ closed }).eq('id', id)
+  if (error) throw error
+}
+
+export async function setMaxSigners(id: string, max: number | null) {
+  const { error } = await supabase.from('esign_contracts').update({ max_signers: max }).eq('id', id)
+  if (error) throw error
+}
+
+/** 모든 서명본을 ZIP 하나로 묶어 내려받는다(브라우저에서 묶음) */
+export async function zipSignings(title: string, items: Signing[]): Promise<Blob> {
+  const files: Record<string, Uint8Array> = {}
+  let i = 0
+  for (const s of items) {
+    if (!s.signed_path) continue
+    i++
+    const base = `${String(i).padStart(2, '0')}_${s.signer_name.replace(/[\\/:*?"<>|]/g, '_')}_서명완료.pdf`
+    files[base] = await downloadBytes(s.signed_path)
+  }
+  const zipped = zipSync(files, { level: 0 })
+  return new Blob([new Uint8Array(zipped)], { type: 'application/zip' })
+}
+
+export function triggerBlobDownload(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }
 
 export async function extendContract(id: string, days: number | null) {
