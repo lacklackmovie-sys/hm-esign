@@ -64,6 +64,16 @@ describe('stampSignedPdf', () => {
     writeFileSync('test-out/stamped-rot90.pdf', r.pdf)
     expect(r.pageCount).toBe(3)
   })
+  it('다중 모드: 제출 ID·연락처 행이 확인서에 들어간다', async () => {
+    const original = await makeOriginal()
+    const r = await stampSignedPdf({ ...base, original, fields: [], signingId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', signerPhone: '010-1234-5678', recipientName: 'MULTI' })
+    writeFileSync('test-out/stamped-multi.pdf', r.pdf)
+    const { spawnSync } = await import('node:child_process')
+    const t = spawnSync('pdftotext', ['-f', '3', '-l', '3', 'test-out/stamped-multi.pdf', '-'])
+    if (t.error) return // pdftotext 가 없는 환경에서는 텍스트 확인만 건너뜀
+    expect(t.stdout.toString()).toContain('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')
+    expect(t.stdout.toString()).toContain('010-1234-5678')
+  })
   it('사진 → PDF', async () => {
     // 가짜 JPEG 는 못 만들므로 PNG 를 거치지 않는 대신 빈 입력/잘못된 입력 처리만 확인
     await expect(jpegsToPdf([{ bytes: new Uint8Array([1, 2, 3]), w: 10, h: 10 }])).rejects.toThrow()

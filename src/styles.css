@@ -50,11 +50,10 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--gold); outl
 
 /* 관리자 */
 .admin { max-width: 760px; margin: 0 auto; min-height: 100vh; }
-.a-head { background: var(--ink); color: #fff; display: flex; align-items: center; gap: 10px; padding: 10px 16px; padding-top: calc(10px + env(safe-area-inset-top)); position: sticky; top: 0; z-index: 20; }
+.a-head { background: var(--ink); color: #fff; display: flex; align-items: center; gap: 12px; padding: 8px 16px; min-height: 58px; padding-top: calc(8px + env(safe-area-inset-top)); position: sticky; top: 0; z-index: 20; }
 .a-title { color: #e9d9a3; font-size: 13px; letter-spacing: .06em; margin-right: auto; }
-.logo { display: inline-flex; align-items: center; gap: 8px; } .logo b { letter-spacing: .14em; font-size: 13px; }
-.a-head .logo b { color: #fff; }
-.tabs { display: flex; background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 46px; z-index: 19; }
+.logo { display: block; flex: none; }
+.tabs { display: flex; background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: calc(58px + env(safe-area-inset-top)); z-index: 19; }
 .tabs button { flex: 1; background: none; border: 0; border-bottom: 3px solid transparent; font: inherit; font-weight: 700; padding: 14px 0 11px; color: var(--muted); cursor: pointer; }
 .tabs button.on { color: var(--fg); border-bottom-color: var(--gold); }
 .admin main { padding: 16px 16px 120px; }
@@ -103,8 +102,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--gold); outl
 
 /* 서명자 */
 .signer { max-width: 720px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
-.s-head { background: var(--ink); color: #fff; padding: 10px 16px; padding-top: calc(10px + env(safe-area-inset-top)); display: flex; align-items: center; justify-content: space-between; }
-.s-head .logo b { color: #fff; } .s-head > span { color: #e9d9a3; font-size: 13px; }
+.s-head { background: radial-gradient(ellipse at 30% 40%, #1b1a17, var(--ink) 70%); color: #fff; padding: 16px 18px 16px; padding-top: calc(16px + env(safe-area-inset-top)); display: flex; align-items: center; gap: 16px; border-bottom: 2px solid var(--gold, #c9a227); }
+.s-title { display: flex; flex-direction: column; gap: 4px; min-width: 0; } .s-title b { font-size: 19px; letter-spacing: -.01em; } .s-title span { color: #cfcbc2; font-size: 13px; line-height: 1.4; }
 .signer main { padding: 16px 14px 28px; flex: 1; }
 .s-foot { text-align: center; color: var(--muted); font-size: 12px; padding: 16px; }
 .eyebrow { color: var(--gold-text); font-weight: 700; font-size: 13px; letter-spacing: .08em; margin: 0; }
@@ -152,7 +151,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--gold); outl
 /* 로그인 */
 .login { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; background: var(--ink); }
 .login-card { background: var(--bg); border-radius: 20px; padding: 26px 22px; width: 100%; max-width: 400px; }
-.login-card .logo b { color: var(--fg); }
+.login-logo { background: var(--ink); border-radius: 14px; padding: 18px 0; display: flex; justify-content: center; margin-bottom: 14px; border-bottom: 3px solid var(--gold, #c9a227); }
 .toast { position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 999px; font-size: 14px; z-index: 200; max-width: 90vw; text-align: center; box-shadow: 0 6px 20px rgba(0,0,0,.3); }
 
 /* 카드 아래 버튼 줄: 모바일은 가로 전체 폭, PC는 한 줄 */
@@ -167,3 +166,24 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--gold); outl
   .actions.two-act .btn { flex: 0 0 auto; }
   .admin { max-width: 860px; }
 }
+
+/* 보내는 방식 선택 */
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0 4px; }
+.mode { text-align: left; background: #fff; border: 2px solid var(--line); border-radius: var(--radius); padding: 12px; font: inherit; cursor: pointer; display: flex; flex-direction: column; gap: 4px; min-height: 96px; }
+.mode b { font-size: 16px; }
+.mode small { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+.mode.on { border-color: var(--gold); background: #fffaf0; box-shadow: 0 0 0 3px rgba(201,162,39,.25); }
+.mode.on b::before { content: '✓ '; color: var(--gold-text); }
+.tag, .badge { align-self: flex-start; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--ink); color: #f1dd9a; letter-spacing: .02em; white-space: nowrap; }
+.badge.multi { background: var(--gold); color: var(--gold-ink); }
+.badge.single { background: #ece9e1; color: #4d493f; }
+.pill.collecting { background: #dcf3e4; color: #166437; }
+.pill.closed { background: #ece9e1; color: #5b574f; }
+.titlerow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.signers { list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 10px; }
+.signers .card .actions { margin-top: 0; }
+.stat { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
+.stat div { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px; min-width: 100px; }
+.stat b { display: block; font-size: 20px; } .stat span { font-size: 12px; color: var(--muted); }
+.field small.muted { display: block; margin-top: 6px; font-size: 12.5px; }
+@media (max-width: 380px) { .modes { grid-template-columns: 1fr; } }

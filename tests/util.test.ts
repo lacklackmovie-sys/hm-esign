@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { FIELD_DEFAULTS, fileBase, fitBox, fmtDateKo, fmtKST, fmtKSTFull, fmtSize, isKakaoUA, isValidToken, newField, shownStatus, sha256Hex } from '../src/lib/util'
+import { deviceId, FIELD_DEFAULTS, fileBase, fitBox, fmtDateKo, fmtKST, fmtKSTFull, fmtSize, isKakaoUA, isValidToken, newField, shownStatus, sha256Hex } from '../src/lib/util'
 import { shareText } from '../src/lib/share'
 
 describe('util', () => {
@@ -16,6 +16,25 @@ describe('util', () => {
     expect(shownStatus({ status: 'sent', expires_at: '2026-11-09T00:00:00Z' }, now)).toBe('expired')
     expect(shownStatus({ status: 'viewed', expires_at: '2026-11-11T00:00:00Z' }, now)).toBe('viewed')
     expect(shownStatus({ status: 'sent', expires_at: null }, now)).toBe('sent')
+  })
+  it('다중 모드 상태: 모집중/마감(수동·정원)/만료', () => {
+    const now = Date.parse('2026-11-10T00:00:00Z')
+    const base = { status: 'sent' as const, mode: 'multi' as const, expires_at: null, closed: false, max_signers: 3, signed_count: 2 }
+    expect(shownStatus(base, now)).toBe('collecting')
+    expect(shownStatus({ ...base, signed_count: 3 }, now)).toBe('closed')
+    expect(shownStatus({ ...base, closed: true }, now)).toBe('closed')
+    expect(shownStatus({ ...base, max_signers: null, signed_count: 999 }, now)).toBe('collecting')
+    expect(shownStatus({ ...base, expires_at: '2026-11-09T00:00:00Z' }, now)).toBe('expired')
+  })
+  it('기기 번호: 저장소에 한 번 만들고 계속 같은 값, 저장소가 막히면 임시 값', () => {
+    const mem: Record<string, string> = {}
+    vi.stubGlobal('localStorage', { getItem: (k: string) => mem[k] ?? null, setItem: (k: string, v: string) => { mem[k] = v } })
+    const a = deviceId()
+    expect(a).toMatch(/^[A-Za-z0-9-]{8,64}$/)
+    expect(deviceId()).toBe(a)
+    vi.stubGlobal('localStorage', { getItem: () => { throw new Error('blocked') }, setItem: () => { throw new Error('blocked') } })
+    expect(deviceId()).toMatch(/^[A-Za-z0-9-]{8,64}$/)
+    vi.unstubAllGlobals()
   })
   it('토큰 형식: 64자리 16진수만 허용', () => {
     expect(isValidToken('a'.repeat(64))).toBe(true)
