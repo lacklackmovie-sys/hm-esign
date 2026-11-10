@@ -21,8 +21,13 @@ code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; w
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 .btn.primary { background: var(--gold); border-color: var(--gold); color: var(--gold-ink); }
 .btn.ghost { border-color: transparent; background: transparent; }
-.btn.danger { color: var(--danger); border-color: #ecc3c3; }
-.btn.danger.solid { background: var(--danger); color: #fff; border-color: var(--danger); }
+.btn.danger { color: #b3261e; background: #fdecea; border: 2px solid #d9534f; font-weight: 700; }
+.btn.danger.solid { background: #c42b2b; color: #fff; border-color: #c42b2b; }
+.btn.dl { background: #fff; color: var(--ink); border: 2px solid var(--ink); font-weight: 700; }
+.btn.dl:active { background: var(--surface); }
+.btn .ico { flex: none; margin-right: 6px; }
+.btn.act { min-height: 48px; font-size: 15px; padding: 0 14px; border-radius: 12px; gap: 0; white-space: nowrap; }
+.btn.big.dl, .btn.big .ico { font-size: 17px; }
 .btn.big { min-height: 54px; font-size: 17px; width: 100%; border-radius: 14px; }
 .btn.sm { min-height: 38px; font-size: 14px; padding: 0 12px; }
 .link { background: none; border: 0; color: var(--gold-text); font: inherit; font-weight: 600; padding: 8px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
@@ -149,3 +154,16 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--gold); outl
 .login-card { background: var(--bg); border-radius: 20px; padding: 26px 22px; width: 100%; max-width: 400px; }
 .login-card .logo b { color: var(--fg); }
 .toast { position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 999px; font-size: 14px; z-index: 200; max-width: 90vw; text-align: center; box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+
+/* 카드 아래 버튼 줄: 모바일은 가로 전체 폭, PC는 한 줄 */
+.actions { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--line); }
+.actions .use { grid-column: 1 / -1; }
+.actions .btn { width: 100%; }
+.actions.two-act { grid-template-columns: 1fr 1fr; }
+@media (min-width: 700px) {
+  .actions { display: flex; flex-wrap: wrap; }
+  .actions .use { grid-column: auto; }
+  .actions .btn { width: auto; flex: 1 1 0; min-width: 120px; }
+  .actions.two-act .btn { flex: 0 0 auto; }
+  .admin { max-width: 860px; }
+}
