@@ -29,13 +29,18 @@ export function fmtDateKo(v: Date | string): string {
   return `${p.year}년 ${Number(p.month)}월 ${Number(p.day)}일`
 }
 
-export function shownStatus(c: Pick<Contract, 'status' | 'expires_at'>, now = Date.now()): ShownStatus {
+export function shownStatus(c: Pick<Contract, 'status' | 'expires_at'> & { mode?: 'single' | 'multi'; closed?: boolean; max_signers?: number | null; signed_count?: number }, now = Date.now()): ShownStatus {
+  if (c.mode === 'multi') {
+    if (c.expires_at && new Date(c.expires_at).getTime() <= now) return 'expired'
+    if (c.closed || (c.max_signers != null && (c.signed_count ?? 0) >= c.max_signers)) return 'closed'
+    return 'collecting'
+  }
   if (c.status === 'signed') return 'signed'
   if (c.expires_at && new Date(c.expires_at).getTime() <= now) return 'expired'
   return c.status
 }
 export const STATUS_LABEL: Record<ShownStatus, string> = {
-  sent: '보냄', viewed: '열람', signed: '서명완료', expired: '만료',
+  sent: '보냄', viewed: '열람', signed: '서명완료', expired: '만료', collecting: '모집중', closed: '마감',
 }
 export const DB_STATUS_ORDER: DbStatus[] = ['sent', 'viewed', 'signed']
 
@@ -95,4 +100,15 @@ export function isKakaoUA(ua: string): boolean {
 
 export function isValidToken(t: string): boolean {
   return /^[a-f0-9]{64}$/.test(t)
+}
+
+/** 이 기기를 구분하는 임의 번호(같은 기기의 중복 제출을 막는 데만 쓰인다. 이름으로는 막지 않는다) */
+export function deviceId(): string {
+  try {
+    let d = localStorage.getItem('hm-esign-device')
+    if (!d || !/^[A-Za-z0-9-]{8,64}$/.test(d)) { d = crypto.randomUUID(); localStorage.setItem('hm-esign-device', d) }
+    return d
+  } catch {
+    return crypto.randomUUID()
+  }
 }

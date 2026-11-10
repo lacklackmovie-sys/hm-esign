@@ -20,7 +20,7 @@ export default function Login({ notAdmin }: { notAdmin?: boolean }) {
   return (
     <div className="login">
       <div className="login-card">
-        <Logo />
+        <div className="login-logo"><Logo size={96} /></div>
         <h1>전자계약 관리자</h1>
         <p className="muted">허니미디어 관리자만 들어올 수 있어요.</p>
         {notAdmin && (

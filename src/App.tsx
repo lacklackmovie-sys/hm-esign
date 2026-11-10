@@ -33,7 +33,7 @@ function Admin({ path }: { path: string }) {
   return (
     <div className="admin">
       <header className="a-head">
-        <Logo />
+        <Logo size={40} />
         <span className="a-title">전자계약</span>
         <button className="link light" onClick={() => supabase.auth.signOut()} data-testid="logout">로그아웃</button>
       </header>
