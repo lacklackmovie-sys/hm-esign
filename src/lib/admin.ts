@@ -149,3 +149,12 @@ export async function extendContract(id: string, days: number | null) {
 }
 
 export { uid }
+
+export function triggerDownload(url: string) {
+  const a = document.createElement('a')
+  a.href = url
+  a.rel = 'noopener'
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+}

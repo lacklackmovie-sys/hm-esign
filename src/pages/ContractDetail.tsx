@@ -2,12 +2,12 @@ import { useCallback, useEffect, useState } from 'react'
 import Modal from '../components/Modal'
 import PdfPages from '../components/PdfPages'
 import { toast } from '../components/Toast'
-import { deleteContract, downloadBytes, extendContract, getContract, linkFor, signedUrl } from '../lib/admin'
+import Icon from '../components/Icon'
+import { deleteContract, downloadBytes, extendContract, getContract, linkFor, signedUrl, triggerDownload } from '../lib/admin'
 import { go } from '../lib/hooks'
 import { copyText, shareText } from '../lib/share'
 import type { Contract } from '../lib/types'
 import { fmtKST, shownStatus } from '../lib/util'
-import { triggerDownload } from './Templates'
 import { StatusPill } from './Contracts'
 
 export default function ContractDetail({ id, isNew }: { id: string; isNew: boolean }) {
@@ -72,8 +72,8 @@ export default function ContractDetail({ id, isNew }: { id: string; isNew: boole
           <h2>서명 완료</h2>
           <p>{c.signer_name}님이 {fmtKST(c.signed_at)}에 서명했어요.</p>
           <div className="two">
-            <button className="btn big" onClick={viewSigned} data-testid="view-signed">서명본 보기</button>
-            <button className="btn primary big" onClick={downloadSigned} data-testid="dl-signed">서명본 다운로드</button>
+            <button className="btn big" onClick={viewSigned} data-testid="view-signed"><Icon name="eye" />서명본 미리보기</button>
+            <button className="btn dl big" onClick={downloadSigned} data-testid="dl-signed"><Icon name="download" />서명본 다운로드</button>
           </div>
         </div>
       )}
@@ -95,7 +95,7 @@ export default function ContractDetail({ id, isNew }: { id: string; isNew: boole
 
       <div className="row-actions">
         {status !== 'signed' && <button className="btn" onClick={() => setExt(true)} data-testid="extend-btn">{status === 'expired' ? '기한 다시 열기' : '기한 변경'}</button>}
-        <button className="btn danger" onClick={() => setDel(true)} data-testid="del-contract">계약 삭제</button>
+        <button className="btn danger act" onClick={() => setDel(true)} data-testid="del-contract"><Icon name="trash" />{status === 'signed' ? '서명본·계약 삭제' : '계약 삭제'}</button>
       </div>
 
       {view && <Modal title="서명본" wide onClose={() => setView(null)}><PdfPages bytes={view} /></Modal>}
@@ -113,10 +113,10 @@ export default function ContractDetail({ id, isNew }: { id: string; isNew: boole
           <p>「{c.title}」 계약을 삭제할까요?</p>
           <p className="small err">서명된 파일도 함께 지워지고 되돌릴 수 없어요. 필요하면 먼저 서명본을 다운로드해 두세요.</p>
           <div className="modal-actions">
-            <button className="btn" onClick={() => setDel(false)}>취소</button>
-            <button className="btn danger solid" data-testid="del-contract-confirm" onClick={async () => {
+            <button className="btn act" onClick={() => setDel(false)}>취소</button>
+            <button className="btn danger solid act" data-testid="del-contract-confirm" onClick={async () => {
               try { await deleteContract(c); toast('삭제했어요'); go('/contracts') } catch { toast('삭제하지 못했어요') }
-            }}>삭제</button>
+            }}><Icon name="trash" />삭제</button>
           </div>
         </Modal>
       )}

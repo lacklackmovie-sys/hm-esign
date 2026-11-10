@@ -2,19 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Modal from '../components/Modal'
 import PdfPages from '../components/PdfPages'
 import { toast } from '../components/Toast'
-import { deleteTemplate, downloadBytes, listTemplates, renameTemplate, signedUrl, uploadTemplate, UploadError } from '../lib/admin'
+import Icon from '../components/Icon'
+import { deleteTemplate, downloadBytes, listTemplates, renameTemplate, signedUrl, triggerDownload, uploadTemplate, UploadError } from '../lib/admin'
 import { go } from '../lib/hooks'
 import type { Template } from '../lib/types'
 import { fileBase, fmtKST, fmtSize } from '../lib/util'
-
-export function triggerDownload(url: string) {
-  const a = document.createElement('a')
-  a.href = url
-  a.rel = 'noopener'
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-}
 
 export default function Templates() {
   const [items, setItems] = useState<Template[] | null>(null)
@@ -83,12 +75,12 @@ export default function Templates() {
               <strong className="ttl">{t.name}</strong>
               <span className="meta">{t.page_count}쪽 · {fmtSize(t.size_bytes)} · {fmtKST(t.created_at)}</span>
             </div>
-            <div className="row-actions">
-              <button className="btn primary sm" onClick={() => go(`/new?template=${t.id}`)} data-testid="use-template">계약 만들기</button>
-              <button className="btn sm" onClick={() => showPreview(t)}>보기</button>
-              <button className="btn sm" onClick={() => download(t)} data-testid="dl-template">다운로드</button>
-              <button className="btn sm" onClick={() => setRename(t)}>이름 변경</button>
-              <button className="btn sm danger" onClick={() => setDel(t)} data-testid="del-template">삭제</button>
+            <div className="actions" role="group" aria-label={`${t.name} 작업`}>
+              <button className="btn primary act use" onClick={() => go(`/new?template=${t.id}`)} data-testid="use-template"><Icon name="plus" />계약 만들기</button>
+              <button className="btn act" onClick={() => showPreview(t)} data-testid="preview-template"><Icon name="eye" />미리보기</button>
+              <button className="btn act" onClick={() => setRename(t)} data-testid="rename-template"><Icon name="edit" />이름 변경</button>
+              <button className="btn dl act" onClick={() => download(t)} data-testid="dl-template"><Icon name="download" />다운로드</button>
+              <button className="btn danger act" onClick={() => setDel(t)} data-testid="del-template"><Icon name="trash" />삭제</button>
             </div>
           </li>
         ))}
@@ -113,10 +105,10 @@ export default function Templates() {
           <p>「{del.name}」 양식을 삭제할까요?</p>
           <p className="small muted">이미 만든 계약서는 그대로 남아요.</p>
           <div className="modal-actions">
-            <button className="btn" onClick={() => setDel(null)}>취소</button>
-            <button className="btn danger solid" data-testid="del-confirm" onClick={async () => {
+            <button className="btn act" onClick={() => setDel(null)}>취소</button>
+            <button className="btn danger solid act" data-testid="del-confirm" onClick={async () => {
               try { await deleteTemplate(del); setDel(null); toast('삭제했어요'); load() } catch { toast('삭제하지 못했어요') }
-            }}>삭제</button>
+            }}><Icon name="trash" />삭제</button>
           </div>
         </Modal>
       )}
