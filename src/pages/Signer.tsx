@@ -4,7 +4,7 @@ import SignaturePad from '../components/SignaturePad'
 import { fetchBytes, openContract, submitSigned, type OpenResult, type SignOk } from '../lib/signerApi'
 import { stampSignedPdf } from '../lib/stamp'
 import { renderTextImage } from '../lib/textImage'
-import { fmtDateKo, fmtKST, isKakaoUA, isValidToken } from '../lib/util'
+import { deviceId, fmtDateKo, fmtKST, isKakaoUA, isValidToken } from '../lib/util'
 import type { Field } from '../lib/types'
 import Logo from '../components/Logo'
 
@@ -16,19 +16,21 @@ export default function Signer({ token }: { token: string }) {
   const [bytes, setBytes] = useState<Uint8Array | null>(null)
   const [agree, setAgree] = useState(false)
   const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
   const [sig, setSig] = useState<{ png: Uint8Array; url: string } | null>(null)
   const [padOpen, setPadOpen] = useState(false)
   const [done, setDone] = useState<SignOk | null>(null)
   const [err, setErr] = useState('')
   const [kakaoHint, setKakaoHint] = useState(() => isKakaoUA(navigator.userAgent))
   const [today] = useState(() => new Date())
+  const [signingId] = useState(() => crypto.randomUUID())
 
   useEffect(() => {
     let dead = false
     ;(async () => {
       if (!isValidToken(token)) { setInfo({ status: 'not_found' }); setPhase('ready'); return }
       try {
-        const r = await openContract(token)
+        const r = await openContract(token, deviceId())
         if (dead) return
         setInfo(r)
         if (r.status === 'open') setBytes(await fetchBytes(r.original_url))
@@ -44,6 +46,7 @@ export default function Signer({ token }: { token: string }) {
   const fields: Field[] = open?.fields ?? []
   const hasBoxes = fields.some((f) => f.type === 'signature')
   const trimmed = name.trim()
+  const multi = open?.mode === 'multi'
   const canSubmit = !!open && agree && trimmed.length > 0 && !!sig
 
   const missing = useMemo(() => {
@@ -67,17 +70,21 @@ export default function Signer({ token }: { token: string }) {
         signedAt: new Date(),
         contractId: open.contract_id,
         title: open.title,
-        recipientName: open.recipient_name,
+        recipientName: multi ? '다중 접수 링크 (링크를 받은 누구나)' : open.recipient_name,
         ip: open.client_ip,
         userAgent: navigator.userAgent,
+        signingId,
+        signerPhone: multi ? phone.trim() || undefined : undefined,
         renderText: renderTextImage,
       })
-      const ok = await submitSigned(token, trimmed, res.pdf)
+      const ok = await submitSigned(token, trimmed, res.pdf, multi ? { phone: phone.trim(), deviceId: deviceId(), signingId } : undefined)
       setDone(ok)
       setPhase('done')
     } catch (e) {
       const code = (e as Error).message
-      if (code === 'already_signed') setErr('이미 서명이 끝난 계약서예요.')
+      if (code === 'already_signed') setErr(multi ? '이 기기에서는 이미 서명하셨어요.' : '이미 서명이 끝난 계약서예요.')
+      else if (code === 'closed') setErr('접수가 마감되었어요.')
+      else if (code === 'full') setErr('정원이 모두 찼어요.')
       else if (code === 'expired') setErr('서명 기한이 지났어요. 보낸 분께 새 링크를 요청해 주세요.')
       else setErr('제출하지 못했어요. 잠시 뒤에 다시 눌러 주세요.')
       setPhase('ready')
@@ -88,6 +95,9 @@ export default function Signer({ token }: { token: string }) {
   if (phase === 'error') return <Shell><Notice title="불러오기 실패" body={err} /></Shell>
   if (info?.status === 'not_found') return <Shell><Notice title="링크가 올바르지 않아요" body="보내 드린 링크를 그대로 다시 열어 주세요. 계속 안 되면 보낸 분께 새 링크를 요청해 주세요." /></Shell>
   if (info?.status === 'expired') return <Shell><Notice title="서명 기한이 지났어요" body={`「${info.title}」 계약서의 서명 기한이 끝났어요. 보낸 분께 새 링크를 요청해 주세요.`} /></Shell>
+  if (info?.status === 'closed') return <Shell><Notice title="접수가 마감되었어요" body={`「${info.title}」 계약서는 지금 서명을 받지 않아요. 보낸 분께 문의해 주세요.`} testid="signer-closed" /></Shell>
+  if (info?.status === 'full') return <Shell><Notice title="정원이 모두 찼어요" body={`「${info.title}」 계약서는 정해진 인원이 모두 서명해서 더 받을 수 없어요.`} testid="signer-full" /></Shell>
+  if (info?.status === 'device_signed') return <Shell><Notice icon="✓" title="이미 서명하셨어요" body={`「${info.title}」 계약서에 이 기기에서 ${fmtKST(info.signed_at)}에 서명하셨어요. 다른 분은 각자 휴대폰에서 서명하시면 돼요.`} testid="signer-already" /></Shell>
   if (info?.status === 'signed') return <Shell><Notice icon="✓" title="이미 서명이 완료된 계약서예요" body={`「${info.title}」 계약서는 ${fmtKST(info.signed_at)}에 서명이 끝났어요. 다시 서명할 수 없어요.`} testid="signer-already" /></Shell>
 
   if (phase === 'done' && done) {
@@ -118,7 +128,7 @@ export default function Signer({ token }: { token: string }) {
       <div className="s-intro">
         <p className="eyebrow">서명 요청</p>
         <h1 data-testid="signer-title">{open?.title}</h1>
-        <p className="muted">{open?.recipient_name}님께 요청된 계약서예요. 내용을 끝까지 읽고 아래에서 서명해 주세요.</p>
+        <p className="muted">{multi ? '서명 요청을 받은 계약서예요.' : `${open?.recipient_name}님께 요청된 계약서예요.`} 내용을 끝까지 읽고 아래에서 서명해 주세요.</p>
         {open?.expires_at && <p className="small muted">서명 기한 {fmtKST(open.expires_at)}</p>}
         <p className="small muted">두 손가락으로 벌리면 크게 볼 수 있어요.</p>
       </div>
@@ -142,6 +152,12 @@ export default function Signer({ token }: { token: string }) {
           <span>이름</span>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="본인 이름을 입력하세요" maxLength={60} autoComplete="name" data-testid="signer-name" />
         </label>
+        {multi && (
+          <label className="field">
+            <span>연락처 (선택)</span>
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="010-0000-0000" maxLength={40} inputMode="tel" autoComplete="tel" data-testid="signer-phone" />
+          </label>
+        )}
         <div className="field">
           <span>서명</span>
           <button className={`sig-box ${sig ? 'has' : ''}`} onClick={() => setPadOpen(true)} data-testid="open-pad">
@@ -189,7 +205,7 @@ function Notice({ title, body, icon, testid }: { title: string; body: string; ic
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="signer">
-      <header className="s-head"><Logo /><span>전자계약 서명</span></header>
+      <header className="s-head" data-testid="s-head"><Logo size={72} /><div className="s-title"><b>허니미디어 전자계약서</b><span>계약서를 확인하고 서명해 주세요.</span></div></header>
       <main>{children}</main>
       <footer className="s-foot">허니미디어 HONEY MEDIA · 간편 전자서명 (공인전자서명 아님)</footer>
     </div>

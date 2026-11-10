@@ -4,7 +4,7 @@ import PdfPages from '../components/PdfPages'
 import { toast } from '../components/Toast'
 import { createContract, downloadBytes, listTemplates } from '../lib/admin'
 import { go } from '../lib/hooks'
-import type { Field, FieldType, Template } from '../lib/types'
+import type { Field, FieldType, Mode, Template } from '../lib/types'
 import { FIELD_DEFAULTS, newField } from '../lib/util'
 
 export default function NewContract({ templateId }: { templateId: string | null }) {
@@ -15,6 +15,8 @@ export default function NewContract({ templateId }: { templateId: string | null 
   const [rname, setRname] = useState('')
   const [phone, setPhone] = useState('')
   const [memo, setMemo] = useState('')
+  const [mode, setMode] = useState<Mode>('single')
+  const [maxSigners, setMaxSigners] = useState('')
   const [days, setDays] = useState<string>('7')
   const [fields, setFields] = useState<Field[]>([])
   const [tool, setTool] = useState<FieldType | null>(null)
@@ -41,8 +43,9 @@ export default function NewContract({ templateId }: { templateId: string | null 
     setErr('')
     try {
       const c = await createContract({
-        template: tpl, title: title || tpl.name, recipient_name: rname, recipient_phone: phone, memo, fields,
+        template: tpl, title: title || tpl.name, recipient_name: mode === 'multi' ? '다중 서명' : rname, recipient_phone: mode === 'multi' ? '' : phone, memo, fields,
         expiresInDays: days === 'none' ? null : Number(days),
+        mode, maxSigners: mode === 'multi' && maxSigners.trim() ? Math.max(1, Math.min(10000, Math.floor(Number(maxSigners)) || 1)) : null,
       })
       toast('계약서를 만들었어요')
       go(`/contracts/${c.id}?new=1`)
@@ -59,6 +62,16 @@ export default function NewContract({ templateId }: { templateId: string | null 
   return (
     <section>
       <h1>새 계약 만들기</h1>
+      <div className="modes" role="radiogroup" aria-label="보내는 방식" data-testid="mode-toggle">
+        <button role="radio" aria-checked={mode === 'single'} className={`mode ${mode === 'single' ? 'on' : ''}`} onClick={() => setMode('single')} data-testid="mode-single">
+          <b>싱글 모드</b><span className="tag">1:1</span>
+          <small>한 사람에게 링크 하나. 한 번 서명하면 잠겨요.</small>
+        </button>
+        <button role="radio" aria-checked={mode === 'multi'} className={`mode ${mode === 'multi' ? 'on' : ''}`} onClick={() => setMode('multi')} data-testid="mode-multi">
+          <b>다중 모드</b><span className="tag">여러 명</span>
+          <small>링크 하나를 여러 명이 열어 각자 이름 쓰고 서명해요.</small>
+        </button>
+      </div>
       <div className="form">
         <label className="field"><span>1. 계약서 양식</span>
           <select value={tid ?? ''} onChange={(e) => { setTid(e.target.value || null); setTitle('') }} data-testid="tpl-select">
@@ -69,12 +82,21 @@ export default function NewContract({ templateId }: { templateId: string | null 
         <label className="field"><span>2. 계약명 (서명하는 분에게도 보여요)</span>
           <input value={title} maxLength={160} onChange={(e) => setTitle(e.target.value)} data-testid="c-title" />
         </label>
-        <label className="field"><span>3. 받는 사람 이름 *</span>
-          <input value={rname} maxLength={80} onChange={(e) => setRname(e.target.value)} placeholder="예) 홍길동" data-testid="c-name" />
-        </label>
-        <label className="field"><span>연락처 (선택, 관리용 메모)</span>
-          <input value={phone} maxLength={40} inputMode="tel" onChange={(e) => setPhone(e.target.value)} placeholder="010-0000-0000" data-testid="c-phone" />
-        </label>
+        {mode === 'single' ? (
+          <>
+            <label className="field"><span>3. 받는 사람 이름 *</span>
+              <input value={rname} maxLength={80} onChange={(e) => setRname(e.target.value)} placeholder="예) 홍길동" data-testid="c-name" />
+            </label>
+            <label className="field"><span>연락처 (선택, 관리용 메모)</span>
+              <input value={phone} maxLength={40} inputMode="tel" onChange={(e) => setPhone(e.target.value)} placeholder="010-0000-0000" data-testid="c-phone" />
+            </label>
+          </>
+        ) : (
+          <label className="field"><span>3. 최대 서명 인원 (선택)</span>
+            <input value={maxSigners} inputMode="numeric" onChange={(e) => setMaxSigners(e.target.value.replace(/\D/g, '').slice(0, 5))} placeholder="비워 두면 제한 없음" data-testid="c-max" />
+            <small className="muted">서명하는 사람이 각자 이름과 연락처(선택)를 직접 입력해요. 정원이 차면 자동으로 마감돼요.</small>
+          </label>
+        )}
         <label className="field"><span>메모 (선택, 나만 봐요)</span>
           <textarea value={memo} maxLength={1000} rows={2} onChange={(e) => setMemo(e.target.value)} data-testid="c-memo" />
         </label>
@@ -125,7 +147,7 @@ export default function NewContract({ templateId }: { templateId: string | null 
 
       {err && <p className="err" data-testid="new-err">{err}</p>}
       <div className="sticky-cta">
-        <button className="btn primary big" disabled={!tpl || !rname.trim() || !title.trim() || busy} onClick={create} data-testid="create-contract">
+        <button className="btn primary big" disabled={!tpl || (mode === 'single' && !rname.trim()) || !title.trim() || busy} onClick={create} data-testid="create-contract">
           {busy ? '만드는 중…' : '계약서 만들고 링크 받기'}
         </button>
       </div>

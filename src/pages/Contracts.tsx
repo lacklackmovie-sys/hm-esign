@@ -12,7 +12,7 @@ export function StatusPill({ s }: { s: ShownStatus }) {
 }
 
 const FILTERS: { k: ShownStatus | 'all'; l: string }[] = [
-  { k: 'all', l: '전체' }, { k: 'sent', l: '보냄' }, { k: 'viewed', l: '열람' }, { k: 'signed', l: '서명완료' }, { k: 'expired', l: '만료' },
+  { k: 'all', l: '전체' }, { k: 'sent', l: '보냄' }, { k: 'viewed', l: '열람' }, { k: 'signed', l: '서명완료' }, { k: 'collecting', l: '모집중' }, { k: 'closed', l: '마감' }, { k: 'expired', l: '만료' },
 ]
 
 export default function Contracts() {
@@ -44,8 +44,12 @@ export default function Contracts() {
         {shown?.map((c) => (
           <li key={c.id} className="card clickable" onClick={() => go(`/contracts/${c.id}`)} data-testid="contract-item" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && go(`/contracts/${c.id}`)}>
             <div className="card-main">
-              <strong className="ttl">{c.title}</strong>
-              <span className="meta">{c.recipient_name} · {fmtKST(c.created_at)}{c.signed_at ? ` · 서명 ${fmtKST(c.signed_at)}` : ''}</span>
+              <span className="titlerow"><span className={`badge ${c.mode}`} data-testid="mode-badge">{c.mode === 'multi' ? '다중' : '1:1'}</span><strong className="ttl">{c.title}</strong></span>
+              <span className="meta">
+                {c.mode === 'multi'
+                  ? `서명 ${c.signed_count ?? 0}명${c.max_signers ? ` / 최대 ${c.max_signers}명` : ''} · ${fmtKST(c.created_at)}`
+                  : `${c.recipient_name} · ${fmtKST(c.created_at)}${c.signed_at ? ` · 서명 ${fmtKST(c.signed_at)}` : ''}`}
+              </span>
             </div>
             <StatusPill s={shownStatus(c)} />
             {c.status === 'signed' && c.signed_path && (
