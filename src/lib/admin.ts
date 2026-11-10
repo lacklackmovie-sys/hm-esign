@@ -9,11 +9,13 @@ import { uid } from './util'
 
 export const MAX_UPLOAD = 20 * 1024 * 1024
 
+// 카카오는 #해시를 떼고 미리보기를 만들기 때문에, 계약마다 다른 쿼리(?k=…&v=2)를 붙여 URL 이 서로 다르게 보이게 한다.
+// 쿼리는 미리보기 캐시용일 뿐이고 접근 권한은 전혀 없다(전체 토큰은 #해시에만 있고 서버가 검사한다).
 export function linkFor(token: string): string {
   const u = new URL(window.location.href)
-  u.hash = `#/s/${token}`
-  u.search = ''
-  return u.toString()
+  u.hash = ''
+  u.search = `?k=${token.slice(0, 10)}&v=2`
+  return `${u.toString().replace(/#$/, '')}#/s/${token}`
 }
 
 export async function listTemplates(): Promise<Template[]> {
