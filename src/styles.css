@@ -101,8 +101,9 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--gold); outl
 .fsize { position: absolute; right: -10px; bottom: -10px; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); border: 3px solid #fff; touch-action: none; cursor: nwse-resize; z-index: 3; }
 
 /* 서명자 */
-.signer { max-width: 720px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
-.s-head { background: radial-gradient(ellipse at 30% 40%, #1b1a17, var(--ink) 70%); color: #fff; padding: 16px 18px 16px; padding-top: calc(16px + env(safe-area-inset-top)); display: flex; align-items: center; gap: 16px; border-bottom: 2px solid var(--gold, #c9a227); }
+.signer { min-height: 100vh; display: flex; flex-direction: column; }
+.signer main, .s-foot { width: 100%; max-width: 720px; margin-left: auto; margin-right: auto; }
+.s-head { background: radial-gradient(ellipse at 30% 40%, #1b1a17, var(--ink) 70%); color: #fff; padding: 16px max(18px, calc((100% - 684px) / 2)) 16px; padding-top: calc(16px + env(safe-area-inset-top)); display: flex; align-items: center; gap: 16px; border-bottom: 2px solid var(--gold, #c9a227); }
 .s-title { display: flex; flex-direction: column; gap: 4px; min-width: 0; } .s-title b { font-size: 19px; letter-spacing: -.01em; } .s-title span { color: #cfcbc2; font-size: 13px; line-height: 1.4; }
 .signer main { padding: 16px 14px 28px; flex: 1; }
 .s-foot { text-align: center; color: var(--muted); font-size: 12px; padding: 16px; }
