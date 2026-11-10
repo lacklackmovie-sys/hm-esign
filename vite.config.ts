@@ -14,7 +14,7 @@ export default defineConfig({
       includeAssets: ['icons/*.png', 'mark.svg', 'logo.svg'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,mjs,png,svg,webmanifest}'],
-        globIgnores: ['pdfjs/**'],
+        globIgnores: ['pdfjs/**', 'og.png'],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
@@ -25,7 +25,7 @@ export default defineConfig({
         ],
       },
       manifest: {
-        name: '허니미디어 전자계약 · HONEY MEDIA',
+        name: '허니미디어 전자계약서 · HONEY MEDIA',
         short_name: 'HM 전자계약',
         description: '허니미디어 모바일 전자계약(전자서명) 관리자',
         lang: 'ko',

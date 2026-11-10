@@ -6,3 +6,4 @@ cp -r node_modules/pdfjs-dist/cmaps public/pdfjs/cmaps
 cp -r node_modules/pdfjs-dist/standard_fonts public/pdfjs/standard_fonts
 cp -r node_modules/pdfjs-dist/wasm public/pdfjs/wasm
 for f in icons-b64/*.b64; do base64 -d "$f" > "public/icons/$(basename "$f" .b64)"; done
+[ -f assets-b64/og.png.b64 ] && base64 -d assets-b64/og.png.b64 > public/og.png
